@@ -64,8 +64,8 @@ int main()
 	// Setting column data.
 
 	// Vector and array functions:
-	// set_column_data(const ColumnPtr& ptr, const std::vector<T>& data, const std::size_t& offset = 0)
-	// set_column_data(const ColumnPtr& ptr, const T* data, const std::size_t& rows, const std::size_t& offset = 0)
+	// void set_column_data(const ColumnPtr& ptr, const std::vector<T>& data, const std::size_t& offset = 0)
+	// void set_column_data(const ColumnPtr& ptr, const T* data, const std::size_t& rows, const std::size_t& offset = 0)
 	// Array version only for numeric and complex- not string data.
 
 	// When setting column data, the column's data type will be changed to match
