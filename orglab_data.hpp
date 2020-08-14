@@ -25,10 +25,10 @@ namespace orglab_data {
 	template<class T> static void _set_arithmetic_column_data(const ColumnPtr& col, const T* data, const std::size_t& rows, const std::size_t& offset, bool change_type = true);
 	static void _set_complex_column_data(const ColumnPtr& col, const std::complex<double>* data, const std::size_t& rows, const std::size_t& offset, bool change_type = true);
 	static void _set_string_column_data(const ColumnPtr& col, const std::vector<std::wstring>& data, const std::size_t& offset, bool change_type = true);
-	template<class T> static std::vector<T> _get_arithmetic_column_data(const ColumnPtr& col, const long& offset, const long& rows);
-	static std::vector<std::complex<double>> _get_complex_column_data(const ColumnPtr& col, const long& offset, const long& rows);
-	static std::vector<std::wstring> _get_wstring_column_data(const ColumnPtr& col, const long& offset, const long& rows);
-	static std::vector<std::string> _get_string_column_data(const ColumnPtr& col, const long& offset, const long& rows);
+	template<class T> static void _get_arithmetic_column_data(const ColumnPtr& col, std::vector<T>& data, const long& offset, const long& rows);
+	static void _get_complex_column_data(const ColumnPtr& col, std::vector<std::complex<double>>& data, const long& offset, const long& rows);
+	static void _get_wstring_column_data(const ColumnPtr& col, std::vector<std::wstring>& data, const long& offset, const long& rows);
+	static void _get_string_column_data(const ColumnPtr& col, std::vector<std::string>& data, const long& offset, const long& rows);
 	/* End forward declarations of implementation functions */
 
 
@@ -79,7 +79,9 @@ namespace orglab_data {
 		get_column_data(const ColumnPtr& ptr, const long& offset = 0, const long& rows = -1) {
 		if (!ptr)
 			throw std::exception("ColumnPtr is invalid");
-		return _get_arithmetic_column_data<T>(ptr, offset, rows);
+		std::vector<T> data;
+		_get_arithmetic_column_data<T>(ptr, data, offset, rows);
+		return data;
 	}
 
 	template<class T>
@@ -87,7 +89,9 @@ namespace orglab_data {
 		get_column_data(const ColumnPtr& ptr, const long& offset = 0, const long& rows = -1) {
 		if (!ptr)
 			throw std::exception("ColumnPtr is invalid");
-		return _get_complex_column_data(ptr, offset, rows);
+		std::vector<std::complex<double>> data;
+		_get_complex_column_data(ptr, data, offset, rows);
+		return data;
 	}
 
 	template<class T>
@@ -95,7 +99,9 @@ namespace orglab_data {
 		get_column_data(const ColumnPtr& ptr, const long& offset = 0, const long& rows = -1) {
 		if (!ptr)
 			throw std::exception("ColumnPtr is invalid");
-		return _get_wstring_column_data(ptr, offset, rows);
+		std::vector<std::wstring> data;
+		_get_wstring_column_data(ptr, data, offset, rows);
+		return data;
 	}
 
 	template<class T>
@@ -103,7 +109,9 @@ namespace orglab_data {
 		get_column_data(const ColumnPtr& ptr, const long& offset = 0, const long& rows = -1) {
 		if (!ptr)
 			throw std::exception("ColumnPtr is invalid");
-		return _get_string_column_data(ptr, offset, rows);
+		std::vector<std::string> data;
+		_get_string_column_data(ptr, data, offset, rows);
+		return data;
 	}
 
 	/* End public API */
@@ -306,10 +314,9 @@ namespace orglab_data {
 	}
 
 	template<class T>
-	static std::vector<T> _get_arithmetic_column_data(const ColumnPtr& col, const long& offset, const long& rows) {
+	static void _get_arithmetic_column_data(const ColumnPtr& col, std::vector<T>& data, const long& offset, const long& rows) {
 		if (!_is_vector_type_compatible<T>(col->DataFormat))
 			throw std::exception("Incompatible data types");
-		std::vector<T> vec;
 		_variant_t vt_data = _do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_NUMERIC, _to_non_negative_long(offset), rows < -1 ? -1 : rows);
 		if (VT_ARRAY & vt_data.vt) {
 			long lbound, ubound;
@@ -317,18 +324,16 @@ namespace orglab_data {
 			::SafeArrayGetUBound(vt_data.parray, 1, &ubound);
 			long count = ubound - lbound + 1;
 			if (count > 0) {
-				vec.reserve(count);
+				data.reserve(count);
 				T* p_val = nullptr;
 				::SafeArrayAccessData(vt_data.parray, (void**)&p_val);
-				vec.assign(p_val, p_val + count);
+				data.assign(p_val, p_val + count);
 				::SafeArrayUnaccessData(vt_data.parray);
 			}
 		}
-		return vec;
 	}
 
-	static std::vector<std::complex<double>> _get_complex_column_data(const ColumnPtr& col, const long& offset, const long& rows) {
-		std::vector<std::complex<double>> vec;
+	static void _get_complex_column_data(const ColumnPtr& col, std::vector<std::complex<double>>& data, const long& offset, const long& rows) {
 		_variant_t vt_data = _do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_NUMERIC, _to_non_negative_long(offset), rows < -1 ? -1 : rows);
 		if (VT_ARRAY & vt_data.vt) {
 			long lbound, ubound;
@@ -342,20 +347,19 @@ namespace orglab_data {
 				// for a complex vector since complex has two parts.
 				// Use resize to already add default complex values
 				// to vector.
-				vec.resize(count / 2);
+				data.resize(count / 2);
 				double* p_val = nullptr;
 				::SafeArrayAccessData(vt_data.parray, (void**)&p_val);
-				for (std::size_t i = 0; i < vec.size(); ++i, ++p_val) {
-					vec[i].real(*p_val);
-					vec[i].imag(*(++p_val));
+				for (std::size_t i = 0; i < data.size(); ++i, ++p_val) {
+					data[i].real(*p_val);
+					data[i].imag(*(++p_val));
 				}
 				::SafeArrayUnaccessData(vt_data.parray);
 			}
 		}
-		return vec;
 	}
 
-	static std::vector<std::wstring> _get_wstring_column_data(const ColumnPtr& col, const long& offset, const long& rows) {
+	static void _get_wstring_column_data(const ColumnPtr& col, std::vector<std::wstring>& data, const long& offset, const long& rows) {
 		if (!_is_vector_type_compatible<std::wstring>(col->DataFormat))
 			throw std::exception("Incompatible data types");
 		CComSafeArray<BSTR> csa;
@@ -366,23 +370,21 @@ namespace orglab_data {
 				vt_data.Detach();
 			}
 			else
-				return std::vector<std::wstring>();
+				return;
 		}
 		std::size_t count = csa.GetCount(0);
 		if (0 == count)
-			return std::vector<std::wstring>();
-		std::vector<std::wstring> vec;
-		vec.resize(count);
+			return;
+		data.resize(count);
 		::SafeArrayLock(csa.m_psa);
 		BSTR* p_csa = (BSTR*)(csa.m_psa->pvData);
 		for (long i = 0; i < count; ++i, p_csa++) {
-			vec[i] = _from_bstr(*p_csa);
+			data[i] = _from_bstr(*p_csa);
 		}
 		::SafeArrayUnlock(csa.m_psa);
-		return vec;
 	}
 
-	static std::vector<std::string> _get_string_column_data(const ColumnPtr& col, const long& offset, const long& rows) {
+	static void _get_string_column_data(const ColumnPtr& col, std::vector<std::string>& data, const long& offset, const long& rows) {
 		if (!_is_vector_type_compatible<std::wstring>(col->DataFormat))
 			throw std::exception("Incompatible data types");
 		CComSafeArray<BSTR> csa;
@@ -393,20 +395,18 @@ namespace orglab_data {
 				vt_data.Detach();
 			}
 			else
-				return std::vector<std::string>();
+				return;
 		}
 		std::size_t count = csa.GetCount(0);
 		if (0 == count)
-			return std::vector<std::string>();
-		std::vector<std::string> vec;
-		vec.resize(count);
+			return;
+		data.resize(count);
 		::SafeArrayLock(csa.m_psa);
 		BSTR* p_csa = (BSTR*)(csa.m_psa->pvData);
 		for (long i = 0; i < count; ++i, p_csa++) {
-			vec[i] = _from_wide(_from_bstr(*p_csa));
+			data[i] = _from_wide(_from_bstr(*p_csa));
 		}
 		::SafeArrayUnlock(csa.m_psa);
-		return vec;
 	}
 
 	/* End implementation functions */
