@@ -1,6 +1,8 @@
 ﻿#include <iostream>
 #include <conio.h>
 #include <vector>
+#include <random>
+#include <chrono>
 #include <atlsafe.h>
 
 
@@ -16,6 +18,30 @@
 
 // Include orglab_data.hpp after importing type library and other includes.
 #include "../orglab_data.hpp"
+
+
+namespace my_utils {
+	template <typename T>
+	std::vector<T> get_test_data(long n, long initial = 0, bool sort = false) {
+		std::random_device rd;
+		std::default_random_engine rng(rd());
+		std::uniform_real_distribution<> dist(0, n);
+		std::vector<T> data;
+		data.reserve(n);
+		std::generate_n(std::back_inserter(data), n, [&]() {
+			return initial + dist(rng);
+			});
+		if (sort)
+			std::sort(data.begin(), data.end());
+		return data;
+	}
+
+	std::chrono::time_point<std::chrono::steady_clock> start;
+	std::chrono::milliseconds elapsed_ms(bool init = false) {
+		if (init) start = std::chrono::steady_clock::now();
+		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+	}
+}
 
 
 int main()
@@ -42,7 +68,7 @@ int main()
 	// Begin examples.
 
 	/*
-	Supported C++ data types mapped to supported Origin column data types and vice versa
+	Mapping of supported C++ data type to supported Origin column data types and vice versa.
 	Only these C++ data types are supported.
 	double					<==>	COLDATAFORMAT::DF_TEXT_NUMERIC
 	double					<==>	COLDATAFORMAT::DF_DOUBLE
@@ -129,6 +155,19 @@ int main()
 		std::string s = e.what();
 	}
 
+
+	// How about a performance test?!?
+	wks->Cols = wks->Cols++;
+	origin::ColumnPtr col_1e6 = wks->Columns->Item[wks->Cols-1];
+	std::vector<double> vec_in_1e6 = my_utils::get_test_data<double>(1e6);
+
+	my_utils::elapsed_ms(true);
+	orglab_data::set_column_data<double>(col_1e6, vec_in_1e6);
+	std::cout << "Write 1E6 rows: " << my_utils::elapsed_ms().count() << " ms" << std::endl;
+	my_utils::elapsed_ms(true);
+	std::vector<double> vec_out_1e6 = orglab_data::get_column_data<double>(col_1e6);
+	std::cout << "Read 1E6 rows: " << my_utils::elapsed_ms().count() << " ms" << std::endl;
+
 	// End examples.
 
 
@@ -138,6 +177,7 @@ int main()
 	app->Exit();
 	app.Release();
 	app = nullptr;
+	::Sleep(500);
 	::CoUninitialize();
 
 }
