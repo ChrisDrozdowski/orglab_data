@@ -8,6 +8,14 @@
 
 ### API
 
+#### Setup
+Prior to using the API, you need to assign the `#ORGLAB_DATA_ORGLAB_NS` macro to the name of the namespace you used when importing the type library for either Origin Automation Server or OrgLab. You HAVE to do this. For example:
+
+```cpp
+#import "Origin8.tlb" no_dual_interfaces rename_namespace("origin")
+#define ORGLAB_DATA_ORGLAB_NS origin
+```
+
 #### Functions
 
 ```cpp
@@ -53,7 +61,7 @@ template<class T> void set_column_data(const ColumnPtr& ptr, const std::vector<T
  *
  * Notes
  *   Supported C++ data types: double, float, int, long, unsigned long, short, unsigned short,
- *   std::wstring, std::string, byte, char, std::complex<double>.
+ *   byte, char, std::complex<double> (NOT std::wstring or std::string).
  *
  *   Converts column type to the first one mapped to the data type below. This behavior
  *   may be turned off by defining: ORGLAB_DATA_NO_CHANGE_DATA_TYPE
