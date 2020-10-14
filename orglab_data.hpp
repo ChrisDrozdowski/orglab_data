@@ -1,3 +1,26 @@
+/*
+MIT License
+
+Copyright(c) 2020 OriginLab Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this softwareand associated documentation files(the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and /or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions :
+
+The above copyright noticeand this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
 #ifndef ORGLAB_DATA_HPP
 #define ORGLAB_DATA_HPP
 
@@ -284,27 +307,27 @@ namespace orglab_data {
 
 		template<class T>
 		inline bool is_vector_type_compatible(const COLDATAFORMAT& fmt) {
-			if (std::is_same<T, double>::value&& COLDATAFORMAT::DF_TEXT_NUMERIC == fmt)			return true;
-			if (std::is_same<T, double>::value&& COLDATAFORMAT::DF_DOUBLE == fmt)				return true;
-			if (std::is_same<T, double>::value&& COLDATAFORMAT::DF_DATE == fmt)					return true;
-			if (std::is_same<T, double>::value&& COLDATAFORMAT::DF_TIME == fmt)					return true;
-			if (std::is_same<T, float>::value&& COLDATAFORMAT::DF_FLOAT == fmt)					return true;
-			if (std::is_same<T, int>::value&& COLDATAFORMAT::DF_LONG == fmt)					return true;
-			if (std::is_same<T, long>::value&& COLDATAFORMAT::DF_LONG == fmt)					return true;
-			if (std::is_same<T, unsigned long>::value&& COLDATAFORMAT::DF_ULONG == fmt)			return true;
-			if (std::is_same<T, short>::value&& COLDATAFORMAT::DF_SHORT == fmt)					return true;
-			if (std::is_same<T, unsigned short>::value&& COLDATAFORMAT::DF_USHORT == fmt)		return true;
-			if (std::is_same<T, std::wstring>::value&& COLDATAFORMAT::DF_TEXT_NUMERIC == fmt)	return true;
-			if (std::is_same<T, std::string>::value&& COLDATAFORMAT::DF_TEXT_NUMERIC == fmt)	return true;
-			if (std::is_same<T, std::wstring>::value&& COLDATAFORMAT::DF_TEXT == fmt)			return true;
-			if (std::is_same<T, std::string>::value&& COLDATAFORMAT::DF_TEXT == fmt)			return true;
-			if (std::is_same<T, byte>::value&& COLDATAFORMAT::DF_BYTE == fmt)					return true;
-			if (std::is_same<T, char>::value&& COLDATAFORMAT::DF_CHAR == fmt)					return true;
-			if (std::is_same<T, std::complex<double>>::value&& COLDATAFORMAT::DF_COMPLEX == fmt)return true;
+			if (std::is_same<T, double>::value && COLDATAFORMAT::DF_TEXT_NUMERIC == fmt)			return true;
+			if (std::is_same<T, double>::value && COLDATAFORMAT::DF_DOUBLE == fmt)				return true;
+			if (std::is_same<T, double>::value && COLDATAFORMAT::DF_DATE == fmt)					return true;
+			if (std::is_same<T, double>::value && COLDATAFORMAT::DF_TIME == fmt)					return true;
+			if (std::is_same<T, float>::value && COLDATAFORMAT::DF_FLOAT == fmt)					return true;
+			if (std::is_same<T, int>::value && COLDATAFORMAT::DF_LONG == fmt)					return true;
+			if (std::is_same<T, long>::value && COLDATAFORMAT::DF_LONG == fmt)					return true;
+			if (std::is_same<T, unsigned long>::value && COLDATAFORMAT::DF_ULONG == fmt)			return true;
+			if (std::is_same<T, short>::value && COLDATAFORMAT::DF_SHORT == fmt)					return true;
+			if (std::is_same<T, unsigned short>::value && COLDATAFORMAT::DF_USHORT == fmt)		return true;
+			if (std::is_same<T, std::wstring>::value && COLDATAFORMAT::DF_TEXT_NUMERIC == fmt)	return true;
+			if (std::is_same<T, std::string>::value && COLDATAFORMAT::DF_TEXT_NUMERIC == fmt)	return true;
+			if (std::is_same<T, std::wstring>::value && COLDATAFORMAT::DF_TEXT == fmt)			return true;
+			if (std::is_same<T, std::string>::value && COLDATAFORMAT::DF_TEXT == fmt)			return true;
+			if (std::is_same<T, byte>::value && COLDATAFORMAT::DF_BYTE == fmt)					return true;
+			if (std::is_same<T, char>::value && COLDATAFORMAT::DF_CHAR == fmt)					return true;
+			if (std::is_same<T, std::complex<double>>::value && COLDATAFORMAT::DF_COMPLEX == fmt)	return true;
 			return false;
 		}
 
-		_variant_t _do_get_col_data(const ColumnPtr& col, const ARRAYDATAFORMAT& fmt, const long& offset, const long& rows) {
+		_variant_t do_get_col_data(const ColumnPtr& col, const ARRAYDATAFORMAT& fmt, const long& offset, const long& rows) {
 			if (0 == rows)
 				return _variant_t();
 			long r2 = rows < -1 ? -1 : rows;
@@ -320,7 +343,7 @@ namespace orglab_data {
 		void get_arithmetic_column_data(const ColumnPtr& col, std::vector<T>& data, const long& offset, const long& rows) {
 			if (!is_vector_type_compatible<T>(col->DataFormat))
 				throw std::exception("Incompatible data types");
-			_variant_t vt_data = _do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_NUMERIC, to_non_negative_long(offset), rows < -1 ? -1 : rows);
+			_variant_t vt_data = do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_NUMERIC, to_non_negative_long(offset), rows < -1 ? -1 : rows);
 			if (VT_ARRAY & vt_data.vt) {
 				long lbound, ubound;
 				::SafeArrayGetLBound(vt_data.parray, 1, &lbound);
@@ -337,7 +360,7 @@ namespace orglab_data {
 		}
 
 		void get_complex_column_data(const ColumnPtr& col, std::vector<std::complex<double>>& data, const long& offset, const long& rows) {
-			_variant_t vt_data = _do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_NUMERIC, to_non_negative_long(offset), rows < -1 ? -1 : rows);
+			_variant_t vt_data = do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_NUMERIC, to_non_negative_long(offset), rows < -1 ? -1 : rows);
 			if (VT_ARRAY & vt_data.vt) {
 				long lbound, ubound;
 				::SafeArrayGetLBound(vt_data.parray, 1, &lbound);
@@ -367,7 +390,7 @@ namespace orglab_data {
 				throw std::exception("Incompatible data types");
 			CComSafeArray<BSTR> csa;
 			{ // This scope makes sure vt_data is cleaned up quickly for performance.
-				_variant_t vt_data = _do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_STR, to_non_negative_long(offset), rows < -1 ? -1 : rows);
+				_variant_t vt_data = do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_STR, to_non_negative_long(offset), rows < -1 ? -1 : rows);
 				if (VT_ARRAY & vt_data.vt) {
 					csa.Attach(vt_data.parray);
 					vt_data.Detach();
@@ -392,7 +415,7 @@ namespace orglab_data {
 				throw std::exception("Incompatible data types");
 			CComSafeArray<BSTR> csa;
 			{ // This scope makes sure vt_data is cleaned up quickly for performance.
-				_variant_t vt_data = _do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_STR, to_non_negative_long(offset), rows < -1 ? -1 : rows);
+				_variant_t vt_data = do_get_col_data(col, ARRAYDATAFORMAT::ARRAY1D_STR, to_non_negative_long(offset), rows < -1 ? -1 : rows);
 				if (VT_ARRAY & vt_data.vt) {
 					csa.Attach(vt_data.parray);
 					vt_data.Detach();
