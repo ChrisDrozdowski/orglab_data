@@ -3,6 +3,7 @@
 #include <vector>
 #include <random>
 #include <chrono>
+#include <mutex>
 #include <atlsafe.h>
 
 
@@ -43,10 +44,37 @@ namespace my_utils {
 	}
 }
 
+// Custom function replaces default function used for COM error handling.
+// Converts COM error to std::exception. Very useful!
+void __stdcall my_com_raise_error(HRESULT hr, IErrorInfo* perrorinfo) {
+	if (perrorinfo) {
+		BSTR bstr;
+		perrorinfo->GetDescription(&bstr);
+		char* ch = ::_com_util::ConvertBSTRToString(bstr);
+		::SysFreeString(bstr);
+		std::string str(ch);
+		delete[] ch;
+		throw std::exception(str.c_str());
+	}
+	else
+		throw std::exception("Unknown COM Error");
+}
+
+// Ensures that above function is called only one time.
+void my_set_com_error_handler() {
+	static std::once_flag flag;
+	std::call_once(flag, []() {
+		::_set_com_error_handler(my_com_raise_error);
+		});
+}
+
 
 int main()
 {
 	// We'll use the Origin Automation Server for this example.
+
+	// Install custom function defined above used for COM error handling.
+	my_set_com_error_handler();
 
 	HRESULT hr = ::CoInitializeEx(nullptr, COINIT_DISABLE_OLE1DDE | COINIT_MULTITHREADED);
 	CLSID clsid;
@@ -55,16 +83,17 @@ int main()
 	hr = ::CoCreateInstance(clsid, NULL, CLSCTX_LOCAL_SERVER, IID_IDispatch, (void**)&app);
 	app->Visible = origin::MAINWND_SHOW;
 
-	{ // Scope ensures COM pointers released properly.
 
-		origin::WorksheetPagePtr wksp = app->WorksheetPages->Add();
-		origin::WorksheetPtr wks = wksp->Layers->Item[0];
-		wks->Cols = 5;
-		origin::ColumnPtr col_1 = wks->Columns->Item[0];
-		origin::ColumnPtr col_2 = wks->Columns->Item[1];
-		origin::ColumnPtr col_3 = wks->Columns->Item[2];
-		origin::ColumnPtr col_4 = wks->Columns->Item[3];
-		origin::ColumnPtr col_5 = wks->Columns->Item[4];
+	{ // Scope ensures COM pointers released properly. Important!
+
+		origin::WorksheetPagePtr wksp_ptr = app->WorksheetPages->Add();
+		origin::WorksheetPtr wks_ptr = wksp_ptr->Layers->Item[0];
+		wks_ptr->Cols = 5;
+		origin::ColumnPtr col_ptr_1 = wks_ptr->Columns->Item[0];
+		origin::ColumnPtr col_ptr_2 = wks_ptr->Columns->Item[1];
+		origin::ColumnPtr col_ptr_3 = wks_ptr->Columns->Item[2];
+		origin::ColumnPtr col_ptr_4 = wks_ptr->Columns->Item[3];
+		origin::ColumnPtr col_ptr_5 = wks_ptr->Columns->Item[4];
 
 
 		// Begin examples.
@@ -103,37 +132,37 @@ int main()
 		// Exception thrown if ColumnPtr is invalid or can't set data for some reason.
 
 		std::vector<double> vec_1 = { 1,2,2.3,3.4,4.5,5.6 };
-		orglab_data::set_column_data(col_1, vec_1);
+		orglab_data::set_column_data(col_ptr_1, vec_1);
 
 		std::vector<unsigned long> vec_2 = { 1, 2, 3, 4, 5 };
-		orglab_data::set_column_data(col_2, vec_2);
+		orglab_data::set_column_data(col_ptr_2, vec_2);
 
 		// std::wstring.
 		std::vector<std::wstring> vec_3 = { L"hello world", L"مرحبا بالعالم", L"Բարեւ աշխարհ",
 			L"Здравей свят", L"Прывітанне Сусвет", L"မင်္ဂလာပါကမ္ဘာလောက", L"你好，世界",
 			L"Γειά σου Κόσμε", L"હેલ્લો વિશ્વ", L"Helló Világ", L"こんにちは世界", L"안녕 세상",
 			L"سلام دنیا", L"העלא וועלט" };
-		orglab_data::set_column_data(col_3, vec_3);
+		orglab_data::set_column_data(col_ptr_3, vec_3);
 
 		// std::string.
 		// Below observe data starts at the 14th (zero-based) row in column (offset param = 14).
 		// Much slower than wide strings because it must convert from string to wide string.
 		std::vector<std::string> vec_4 = { "Simple string", "Another simple string" };
-		orglab_data::set_column_data(col_3, vec_4, 14);
+		orglab_data::set_column_data(col_ptr_3, vec_4, 14);
 
 		// Array version.
 		unsigned short arr[5] = { 123, 234, 345, 456, 567 };
-		orglab_data::set_column_data(col_4, arr, 5);
+		orglab_data::set_column_data(col_ptr_4, arr, 5);
 
 		std::vector<std::complex<double>> vec_5 = { std::complex<double>(1, 2),
 			std::complex<double>(3, 4), std::complex<double>(5, 6) };
-		orglab_data::set_column_data(col_5, vec_5);
+		orglab_data::set_column_data(col_ptr_5, vec_5);
 
 
 		// Getting column data.
 
 		// Functions:
-		// std::vector<T> get_column_data(const ColumnPtr& ptr, const long& offset = 0, const long& rows = -1)
+		// std::vector<T> get_column_data<T>(const ColumnPtr& ptr, const long& offset = 0, const long& rows = -1)
 
 		// When getting data from a column, you must assign it to a vector whose
 		// C++ data type is mapped to the relevant column data type mapped above.
@@ -142,16 +171,16 @@ int main()
 
 		// Exception thrown if ColumnPtr is invalid or an incompatible data type is specified.
 
-		std::vector<double> vec_6 = orglab_data::get_column_data<double>(col_1);
-		std::vector<unsigned long> vec_7 = orglab_data::get_column_data<unsigned long>(col_2);
+		std::vector<double> vec_6 = orglab_data::get_column_data<double>(col_ptr_1);
+		std::vector<unsigned long> vec_7 = orglab_data::get_column_data<unsigned long>(col_ptr_2);
 
 		// Below observe offset & number of rows to return.
-		std::vector<std::wstring> vec_8 = orglab_data::get_column_data<std::wstring>(col_3, 2, 3);
-		std::vector<std::string> vec_9 = orglab_data::get_column_data<std::string>(col_3, 4, 5);
+		std::vector<std::wstring> vec_8 = orglab_data::get_column_data<std::wstring>(col_ptr_3, 2, 3);
+		std::vector<std::string> vec_9 = orglab_data::get_column_data<std::string>(col_ptr_3, 4, 5);
 
 		// In this case, an exception will be throw because the specified data type does not match the column data type.
 		try {
-			std::vector<int> vec_10 = orglab_data::get_column_data<int>(col_1);
+			std::vector<int> vec_10 = orglab_data::get_column_data<int>(col_ptr_1);
 		}
 		catch (const std::exception & e) {
 			std::string s = e.what();
@@ -159,16 +188,35 @@ int main()
 
 
 		// How about a performance test?!?
-		wks->Cols = wks->Cols++;
-		origin::ColumnPtr col_1e6 = wks->Columns->Item[wks->Cols - 1];
+		wks_ptr->Cols = wks_ptr->Cols++;
+		origin::ColumnPtr col_ptr_1e6 = wks_ptr->Columns->Item[wks_ptr->Cols - 1];
 		std::vector<double> vec_in_1e6 = my_utils::get_test_data<double>(1e6);
 
 		my_utils::elapsed_ms(true);
-		orglab_data::set_column_data<double>(col_1e6, vec_in_1e6);
+		orglab_data::set_column_data<double>(col_ptr_1e6, vec_in_1e6);
 		std::cout << "Write 1E6 rows: " << my_utils::elapsed_ms().count() << " ms" << std::endl;
 		my_utils::elapsed_ms(true);
-		std::vector<double> vec_out_1e6 = orglab_data::get_column_data<double>(col_1e6);
+		std::vector<double> vec_out_1e6 = orglab_data::get_column_data<double>(col_ptr_1e6);
 		std::cout << "Read 1E6 rows: " << my_utils::elapsed_ms().count() << " ms" << std::endl;
+
+
+		// Now for string property handling.
+		// Anywhere a string-based property (e.g. long name) needs to be written or read, these functions
+		// make it easier.
+
+		// Functions:
+		// _bstr_t to_str_prop(const std::wstring& str)
+		// _bstr_t to_str_prop(const std::string& str)
+		// std::wstring from_str_prop<std::wstring>(const _bstr_t& prop)
+		// std::string from_str_prop<std::string>(const _bstr_t& prop)
+
+		// Set column long name property based on std::string and unit property based on std::wstring.
+		col_ptr_1->LongName = orglab_data::to_str_prop("Time"); // std::string.
+		col_ptr_1->Units = orglab_data::to_str_prop(L"sec"); // std::wstring.
+
+		// Get the properties back. Observe we can get them back as std::string or std::wstring.
+		std::wstring ln = orglab_data::from_str_prop<std::wstring>(col_ptr_1->LongName);
+		std::string u = orglab_data::from_str_prop<std::string>(col_ptr_1->Units);
 
 		// End examples.
 

@@ -53,6 +53,8 @@ namespace orglab_data {
 		void get_complex_column_data(const ColumnPtr& col, std::vector<std::complex<double>>& data, const long& offset, const long& rows);
 		void get_wstring_column_data(const ColumnPtr& col, std::vector<std::wstring>& data, const long& offset, const long& rows);
 		void get_string_column_data(const ColumnPtr& col, std::vector<std::string>& data, const long& offset, const long& rows);
+		std::string from_wide(const std::wstring& wstr);
+		std::wstring to_wide(const std::string& str);
 	}
 	/* End forward declarations of implementation functions */
 
@@ -137,6 +139,19 @@ namespace orglab_data {
 		std::vector<std::string> data;
 		impl::get_string_column_data(ptr, data, offset, rows);
 		return data;
+	}
+
+	_bstr_t to_str_prop(const std::wstring& str) {
+		return str.c_str();
+	}
+	_bstr_t to_str_prop(const std::string& str) { return to_str_prop(impl::to_wide(str)); }
+
+	template<class T> T from_str_prop(const _bstr_t& prop);
+	template<> std::wstring from_str_prop(const _bstr_t& prop) {
+		return std::wstring{ prop, ::SysStringLen(prop) };
+	}
+	template<> std::string from_str_prop(const _bstr_t& prop) {
+		return impl::from_wide(from_str_prop<std::wstring>(prop));
 	}
 
 	/* End public API */

@@ -95,7 +95,41 @@ template<class T> void set_column_data(const ColumnPtr& ptr, const T* data, cons
  *   std::vector<double> vec = orglab_data::get_column_data<double>(col); // col is Text & Numeric
  *
  */
-template<class T> std::vector<T> get_column_data(const ColumnPtr& ptr, const long& offset = 0, const long& rows = -1)
+template<class T> std::vector<T> get_column_data<T>(const ColumnPtr& ptr, const long& offset = 0, const long& rows = -1)
+```
+
+```cpp
+/* Converts a std::string or std::wstring into the appropriate type for a string-based COM object property.
+ *
+ * Parameters
+ *   std::string or std::wstring	str 	Value to convert.
+ *
+ * Returns
+ *   _bstr_t.
+ *
+ * Example
+ *   col_ptr_1->LongName = orglab_data::to_str_prop("Time");
+ *
+ */
+_bstr_t to_str_prop(const std::wstring& str)
+_bstr_t to_str_prop(const std::string& str)
+```
+
+```cpp
+/* Gets (retrieves) a string-based COM object property into a std::string or std::wstring.
+ *
+ * Parameters
+ *   _bstr_t	prop 	COM object string property.
+ *
+ * Returns
+ *   std::string or std::wstring.
+ *
+ * Example
+ *   std::wstring ln = orglab_data::from_str_prop<std::wstring>(col_ptr_1->LongName);
+ *
+ */
+std::wstring from_str_prop<std::wstring>(const _bstr_t& prop)
+std::string from_str_prop<std::string>(const _bstr_t& prop)
 ```
 
 #### Map of C++ data types to column types
