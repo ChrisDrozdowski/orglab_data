@@ -4,12 +4,15 @@
 #include <random>
 #include <chrono>
 #include <mutex>
+#include <filesystem>
+#include <Shlobj.h>
 #include <atlsafe.h>
 
 
-// Import the Origin Automation Server type library and assign it
-// to the origin namespace.
+// Import the Origin Automation Server type library and assign it to the origin namespace.
 #import "Origin8.tlb" no_dual_interfaces rename_namespace("origin")
+// Import the Orglab type library and assign it to the origin namespace.
+//#import "orglab.tlb" no_dual_interfaces rename_namespace("origin")
 
 
 // You MUST define this prior to including orglab_data.hpp.
@@ -42,6 +45,22 @@ namespace my_utils {
 		if (init) start = std::chrono::steady_clock::now();
 		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 	}
+
+	std::wstring get_user_documents_folder() {
+		std::wstring wstr;
+		PWSTR buf1 = NULL;
+		if (S_OK == ::SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &buf1))// Return long path.
+			wstr = buf1;
+		::CoTaskMemFree(buf1);
+		if (0 == wstr.length())
+			return std::wstring{};
+		std::filesystem::path path(wstr);
+		std::error_code ec;
+		if (!std::filesystem::is_directory(path, ec))
+			return std::wstring{};
+		return wstr + std::filesystem::path::preferred_separator;
+	}
+
 }
 
 // Custom function replaces default function used for COM error handling.
@@ -71,21 +90,40 @@ void my_set_com_error_handler() {
 
 int main()
 {
-	// We'll use the Origin Automation Server for this example.
-
 	// Install custom function defined above used for COM error handling.
 	my_set_com_error_handler();
-
-	HRESULT hr = ::CoInitializeEx(nullptr, COINIT_DISABLE_OLE1DDE | COINIT_MULTITHREADED);
+	
+	// Start initialization of COM.
+	::CoInitializeEx(nullptr, COINIT_DISABLE_OLE1DDE | COINIT_MULTITHREADED);
 	CLSID clsid;
-	hr = ::CLSIDFromProgID(L"Origin.Application", &clsid);
 	CComPtr<origin::IOApplication> app;
-	hr = ::CoCreateInstance(clsid, NULL, CLSCTX_LOCAL_SERVER, IID_IDispatch, (void**)&app);
+
+	// This is the launch sequence for Origin Automation Server.
+	// Make sure to use the proper type library #import at the start of the file.
+	::CLSIDFromProgID(L"Origin.Application", &clsid);
+	::CoCreateInstance(clsid, NULL, CLSCTX_LOCAL_SERVER, IID_IDispatch, (void**)&app);
 	app->Visible = origin::MAINWND_SHOW;
+	
+
+	// This is the launch sequence for Orglab.
+	// Make sure to use the proper type library #import at the start of the file.
+	/*
+	const std::vector<std::wstring> prog_ids = { L"OrgLab995.Application", L"OrgLab990.Application", L"OrgLab99.Application",
+	L"OrgLab985.Application", L"OrgLab980.Application", L"OrgLab98.Application",
+	L"OrgLab975.Application", L"OrgLab970.Application", L"OrgLab97.Application", L"OrgLab9.Application" };
+	for (const std::wstring str : prog_ids) {
+		if (SUCCEEDED(::CLSIDFromProgID(str.c_str(), &clsid)))
+			break;
+	}
+	app.CoCreateInstance(clsid);
+	*/
 
 
 	{ // Scope ensures COM pointers released properly. Important!
 
+		// Begin examples in this scope.
+
+		// Create a new workbook with 5 columns and assign column pointers.
 		origin::WorksheetPagePtr wksp_ptr = app->WorksheetPages->Add();
 		origin::WorksheetPtr wks_ptr = wksp_ptr->Layers->Item[0];
 		wks_ptr->Cols = 5;
@@ -94,9 +132,9 @@ int main()
 		origin::ColumnPtr col_ptr_3 = wks_ptr->Columns->Item[2];
 		origin::ColumnPtr col_ptr_4 = wks_ptr->Columns->Item[3];
 		origin::ColumnPtr col_ptr_5 = wks_ptr->Columns->Item[4];
+		// Make sure labels rows get displayed. May be flakey.
+		wks_ptr->Labels(L"LUC");
 
-
-		// Begin examples.
 
 		/*
 		Mapping of supported C++ data type to supported Origin column data types and vice versa.
@@ -218,13 +256,15 @@ int main()
 		std::wstring ln = orglab_data::from_str_prop<std::wstring>(col_ptr_1->LongName);
 		std::string u = orglab_data::from_str_prop<std::string>(col_ptr_1->Units);
 
-		// End examples.
 
+		// Finally, save the project to users Documents folder.
+		std::wstring w_file = my_utils::get_user_documents_folder() + L"example.opju";
+		_variant_t v_file(w_file.c_str());
+		app->Save(v_file);
 	}
 
-	std::cout << "Press any key to close this app.\n";
-	char ch = _getch();
 
+	// This is same shut down sequence for Origin Automation Server and Orglab.
 	app->Exit();
 	app.Release();
 	app = nullptr;
