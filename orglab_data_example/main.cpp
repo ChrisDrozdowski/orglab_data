@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <conio.h>
+#include <exception>
 #include <vector>
 #include <random>
 #include <chrono>

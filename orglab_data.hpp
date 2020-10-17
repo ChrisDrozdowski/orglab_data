@@ -24,6 +24,7 @@ SOFTWARE.
 #ifndef ORGLAB_DATA_HPP
 #define ORGLAB_DATA_HPP
 
+#include <exception>
 #include <vector>
 #include <complex>
 #include <windows.h>
