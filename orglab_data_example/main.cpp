@@ -9,12 +9,18 @@
 #include <Shlobj.h>
 #include <atlsafe.h>
 
+// #define this to use orglab rather than Origin automation Server.
+//#define ORGLAB_DATA_USE_ORGLAB
 
+
+// ORGLAB_DATA_USE_ORGLAB may or may not be #define'd at top of file.
+#ifdef ORGLAB_DATA_USE_ORGLAB
+// Import the Orglab type library and assign it to the origin namespace.
+#import "orglab.tlb" no_dual_interfaces rename_namespace("origin")
+#else
 // Import the Origin Automation Server type library and assign it to the origin namespace.
 #import "Origin8.tlb" no_dual_interfaces rename_namespace("origin")
-// Import the Orglab type library and assign it to the origin namespace.
-//#import "orglab.tlb" no_dual_interfaces rename_namespace("origin")
-
+#endif
 
 // You MUST define this prior to including orglab_data.hpp.
 // It should be set to the namespace you use for the type library.
@@ -92,53 +98,39 @@ void my_set_com_error_handler() {
 int main()
 {
 	// Install custom function defined above used for COM error handling.
+	// This is not documented in OriginLab data but I discovered it.
 	my_set_com_error_handler();
-	
+
 	// Start initialization of COM.
 	::CoInitializeEx(nullptr, COINIT_DISABLE_OLE1DDE | COINIT_MULTITHREADED);
 	CLSID clsid;
 	CComPtr<origin::IOApplication> app;
 
-	// This is the launch sequence for Origin Automation Server.
-	// Make sure to use the proper type library #import at the start of the file.
-	::CLSIDFromProgID(L"Origin.Application", &clsid);
-	::CoCreateInstance(clsid, NULL, CLSCTX_LOCAL_SERVER, IID_IDispatch, (void**)&app);
-	app->Visible = origin::MAINWND_SHOW;
-	
-
+// ORGLAB_DATA_USE_ORGLAB may or may not be #define'd at top of file.
+#ifdef ORGLAB_DATA_USE_ORGLAB
 	// This is the launch sequence for Orglab.
-	// Make sure to use the proper type library #import at the start of the file.
-	/*
 	const std::vector<std::wstring> prog_ids = { L"OrgLab995.Application", L"OrgLab990.Application", L"OrgLab99.Application",
 	L"OrgLab985.Application", L"OrgLab980.Application", L"OrgLab98.Application",
-	L"OrgLab975.Application", L"OrgLab970.Application", L"OrgLab97.Application", L"OrgLab9.Application" };
+	L"OrgLab975.Application", L"OrgLab970.Application", L"OrgLab97.Application", L"OrgLab9.Application"
+	};
 	for (const std::wstring str : prog_ids) {
 		if (SUCCEEDED(::CLSIDFromProgID(str.c_str(), &clsid)))
 			break;
 	}
 	app.CoCreateInstance(clsid);
-	*/
-
+#else
+	// This is the launch sequence for Origin Automation Server.
+	::CLSIDFromProgID(L"Origin.Application", &clsid);
+	::CoCreateInstance(clsid, NULL, CLSCTX_LOCAL_SERVER, IID_IDispatch, (void**)&app);
+	app->Visible = origin::MAINWND_SHOW;
+#endif
 
 	{ // Scope ensures COM pointers released properly. Important!
 
 		// Begin examples in this scope.
 
-		// Create a new workbook with 5 columns and assign column pointers.
-		origin::WorksheetPagePtr wksp_ptr = app->WorksheetPages->Add();
-		origin::WorksheetPtr wks_ptr = wksp_ptr->Layers->Item[0];
-		wks_ptr->Cols = 5;
-		origin::ColumnPtr col_ptr_1 = wks_ptr->Columns->Item[0];
-		origin::ColumnPtr col_ptr_2 = wks_ptr->Columns->Item[1];
-		origin::ColumnPtr col_ptr_3 = wks_ptr->Columns->Item[2];
-		origin::ColumnPtr col_ptr_4 = wks_ptr->Columns->Item[3];
-		origin::ColumnPtr col_ptr_5 = wks_ptr->Columns->Item[4];
-		// Make sure labels rows get displayed. May be flakey.
-		wks_ptr->Labels(L"LUC");
-
-
 		/*
-		Mapping of supported C++ data type to supported Origin column data types and vice versa.
+		Mapping of supported C++ data type to supported Origin data types and vice versa.
 		Only these C++ data types are supported.
 		double					<==>	COLDATAFORMAT::DF_TEXT_NUMERIC
 		double					<==>	COLDATAFORMAT::DF_DOUBLE
@@ -158,6 +150,18 @@ int main()
 		*/
 
 		// Setting column data.
+
+		// Create a new workbook with 5 columns and assign column pointers.
+		origin::WorksheetPagePtr wksp_ptr = app->WorksheetPages->Add();
+		origin::WorksheetPtr wks_ptr = wksp_ptr->Layers->Item[0];
+		wks_ptr->Cols = 5;
+		wks_ptr->Labels(L"LUC");// Make sure labels rows get displayed. May be flakey.
+		origin::ColumnPtr col_ptr_1 = wks_ptr->Columns->Item[0];
+		origin::ColumnPtr col_ptr_2 = wks_ptr->Columns->Item[1];
+		origin::ColumnPtr col_ptr_3 = wks_ptr->Columns->Item[2];
+		origin::ColumnPtr col_ptr_4 = wks_ptr->Columns->Item[3];
+		origin::ColumnPtr col_ptr_5 = wks_ptr->Columns->Item[4];
+
 
 		// Vector and array functions:
 		// void set_column_data(const ColumnPtr& ptr, const std::vector<T>& data, const std::size_t& offset = 0)
@@ -193,6 +197,7 @@ int main()
 		unsigned short arr[5] = { 123, 234, 345, 456, 567 };
 		orglab_data::set_column_data(col_ptr_4, arr, 5);
 
+		// Complex data.
 		std::vector<std::complex<double>> vec_5 = { std::complex<double>(1, 2),
 			std::complex<double>(3, 4), std::complex<double>(5, 6) };
 		orglab_data::set_column_data(col_ptr_5, vec_5);
@@ -239,6 +244,74 @@ int main()
 		std::cout << "Read 1E6 rows: " << my_utils::elapsed_ms().count() << " ms" << std::endl;
 
 
+		// Setting and getting matrix data.
+
+		// Functions:
+		// void set_matrix_data(const MatrixObjectPtr& ptr, const orglab_data::matrix_adapter<T>& ma)
+		// orglab_data::matrix_adapter<T> = get_matrix_data(const MatrixObjectPtr& ptr)
+		// Same rules apply to data types and exceptions as those for columns.
+
+		// About orglab_data::matrix_adapter class.
+		// Simple 2D row-major C++ "matrix" class meant to make it
+		// easier to interact with MatrixObjectPtr.
+		// See beginning of orglab_data::impl namespace for the class definition.
+
+		// Create a new matrixbook with 3 matrices and assign matrix pointers.
+		origin::MatrixPagePtr mksp_ptr = app->MatrixPages->Add();
+		origin::MatrixSheetPtr mks_ptr = mksp_ptr->Layers->Item[0];
+		mks_ptr->Mats = 3;
+		mks_ptr->Rows = 5; // VERY important. matrix dimensions must match this or exception.
+		mks_ptr->Cols = 7; // VERY important. matrix dimensions must match this or exception.
+		origin::MatrixObjectPtr mat_ptr_1 = mks_ptr->MatrixObjects->Item[0];
+		origin::MatrixObjectPtr mat_ptr_2 = mks_ptr->MatrixObjects->Item[1];
+		origin::MatrixObjectPtr mat_ptr_3 = mks_ptr->MatrixObjects->Item[2];
+
+		unsigned short l;
+
+		// Set double matrix.
+		orglab_data::matrix_adapter<double> ma_1(5, 7); // 5 rows, 7 cols
+		l = 1;
+		for (unsigned short i = 0; i < 5; ++i) {
+			for (unsigned short j = 0; j < 7; ++j, ++l) {
+				ma_1(i, j) = 1.0 * l;// rows, cols.
+			}
+		}
+		orglab_data::set_matrix_data(mat_ptr_1, ma_1);
+
+		// Set unsigned short matrix.
+		orglab_data::matrix_adapter<unsigned short> ma_2(5, 7); // 5 rows, 7 cols
+		l = 1;
+		for (unsigned short i = 0; i < 5; ++i) {
+			for (unsigned short j = 0; j < 7; ++j, ++l) {
+				ma_2(i, j) = 1 * l;// rows, cols.
+			}
+		}
+		orglab_data::set_matrix_data(mat_ptr_2, ma_2);
+
+		// Set complex<double> matrix.
+		orglab_data::matrix_adapter<std::complex<double>> ma_3(5, 7); // 5 rows, 7 cols
+		l = 1;
+		for (unsigned short i = 0; i < 5; ++i) {
+			for (unsigned short j = 0; j < 7; ++j, ++l) {
+				std::complex<double> cpx{ 1.0 * l, 0.1 * l };
+				ma_3(i, j) = cpx; // rows, cols.
+			}
+		}
+		orglab_data::set_matrix_data(mat_ptr_3, ma_3);
+
+		// Get double matrix.
+		orglab_data::matrix_adapter<double> ma_4 = orglab_data::get_matrix_data<double>(mat_ptr_1);
+
+		// Get unsigned short matrix.
+		orglab_data::matrix_adapter<unsigned short> ma_5 = orglab_data::get_matrix_data<unsigned short>(mat_ptr_2);
+
+		// Get complex<double> matrix.
+		orglab_data::matrix_adapter<std::complex<double>> ma_6 = orglab_data::get_matrix_data<std::complex<double>>(mat_ptr_3);
+
+		// You can dump matrices. orglab_data::matrix_adapter supports the << operator.
+		std::cout << ma_6 << std::endl;
+
+
 		// Now for string property handling.
 		// Anywhere a string-based property (e.g. long name) needs to be written or read, these functions
 		// make it easier.
@@ -269,7 +342,7 @@ int main()
 	app->Exit();
 	app.Release();
 	app = nullptr;
-	::Sleep(500);
-	::CoUninitialize();
+	::Sleep(500); // Apparently need a small delay to avoid an exception.
+	::CoUninitialize(); // Must be called from same thread as ::CoInitialize.
 
 }
