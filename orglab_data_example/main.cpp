@@ -252,7 +252,7 @@ int main()
 		// Same rules apply to data types and exceptions as those for columns.
 
 		// About orglab_data::matrix_adapter class.
-		// Simple 2D row-major C++ "matrix" class meant to make it
+		// Simple 2D C++ "matrix" class meant to make it
 		// easier to interact with MatrixObjectPtr.
 		// See beginning of orglab_data::impl namespace for the class definition.
 

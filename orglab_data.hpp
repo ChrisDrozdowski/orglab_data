@@ -50,7 +50,7 @@ namespace orglab_data {
 
 	namespace impl { // Begin namespace for internal implementation.
 
-		/* Simple 2D row-major C++ "matrix" class */
+		/* Simple 2D C++ "matrix" class */
 		/* Meant to make it easier to interact with MatrixObjectPtr */
 		template<class T>
 		class matrix_adapter {
@@ -127,8 +127,14 @@ namespace orglab_data {
 				return *this;
 			}
 
-			/* Returns raw array of internal storage */
+			/* Returns raw const array of internal storage */
 			const T* data() const {
+				return vec_.data();
+			}
+
+			/* Returns raw non-const (editable) array of internal storage */
+			// Must not modify size of returned array */
+			T* data() {
 				return vec_.data();
 			}
 
@@ -140,6 +146,40 @@ namespace orglab_data {
 			/* Returns number of columns */
 			inline unsigned short cols() const {
 				return cols_;
+			}
+
+			/* Sets number of rows */
+			matrix_adapter& rows(const unsigned short& rows) {
+				if (0 == rows) {
+					cols_ = rows_ * cols_;
+					rows_ = 0;
+				}
+				else if (rows > rows_ * cols_) {
+					rows_ = rows_ * cols_;
+					cols_ == 0;
+				}
+				else {
+					rows_ = rows;
+					cols_ = (rows_ * cols_) / rows_;
+				}
+				return *this;
+			}
+
+			/* Sets number of columns */
+			matrix_adapter& cols(const unsigned short& cols) {
+				if (0 == cols) {
+					rows_ = rows_ * cols_;
+					cols_ = 0;
+				}
+				else if (cols > rows_ * cols_) {
+					cols_ = rows_ * cols_;
+					rows_ == 0;
+				}
+				else {
+					cols_ = cols;
+					rows_ = (rows_ * cols_) / cols_;
+				}
+				return *this;
 			}
 
 			/* Return size in elements of internal storage */
