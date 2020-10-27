@@ -205,7 +205,7 @@ orglab_data::set_matrix_data(mat_ptr_1, ma_1);
 
 orglab_data::matrix_adapter&lt;<span class="hljs-keyword">double</span>&gt; ma_2 = orglab_data::get_matrix_data&lt;<span class="hljs-keyword">double</span>&gt;(mat_ptr_1);
 </code></pre>
-<pre><code class="has-line-data" data-line-start="234" data-line-end="281" class="language-cpp">template&lt;class T&gt;
+<pre><code class="has-line-data" data-line-start="234" data-line-end="291" class="language-cpp">template&lt;class T&gt;
 class matrix_adapter {
 
     /* Constructor */
@@ -226,14 +226,24 @@ class matrix_adapter {
     /* Assigns raw array to matrix adapter */
     matrix_adapter&amp; assign(T* data, const unsigned short&amp; rows, const unsigned short&amp; cols)
 
-    /* Returns raw array of internal storage */
+    /* Returns raw const array of internal storage */
     const T* data() const
+
+    /* Returns raw non-const (editable) array of internal storage */
+    // Must not modify size of returned array */
+    T* data()
 
     /* Returns number of rows */
     inline unsigned short rows() const
 
     /* Returns number of columns */
     inline unsigned short cols() const
+
+    /* Sets number of rows */
+    matrix_adapter&amp; rows(const unsigned short&amp; rows)
+
+    /* Sets number of columns */
+    matrix_adapter&amp; cols(const unsigned short&amp; cols)
 
     /* Return size in elements of internal storage */
     inline std::size_t size() const
