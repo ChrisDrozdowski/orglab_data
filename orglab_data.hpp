@@ -32,6 +32,7 @@ SOFTWARE.
 #include <comdef.h>
 #include <atlsafe.h>
 #include <ostream>
+#include <assert.h>
 
 #ifndef ORGLAB_DATA_ORGLAB_NS
 #define ORGLAB_DATA_ORGLAB_NS origin

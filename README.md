@@ -253,14 +253,24 @@ class matrix_adapter {
     /* Assigns raw array to matrix adapter */
     matrix_adapter& assign(T* data, const unsigned short& rows, const unsigned short& cols)
 
-    /* Returns raw array of internal storage */
+    /* Returns raw const array of internal storage */
     const T* data() const
+
+    /* Returns raw non-const (editable) array of internal storage */
+    // Must not modify size of returned array */
+    T* data()
 
     /* Returns number of rows */
     inline unsigned short rows() const
 
     /* Returns number of columns */
     inline unsigned short cols() const
+
+    /* Sets number of rows */
+    matrix_adapter& rows(const unsigned short& rows)
+
+    /* Sets number of columns */
+    matrix_adapter& cols(const unsigned short& cols)
 
     /* Return size in elements of internal storage */
     inline std::size_t size() const
