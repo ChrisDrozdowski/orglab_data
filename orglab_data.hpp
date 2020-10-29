@@ -134,6 +134,8 @@ namespace orglab_data {
 			}
 
 			/* Returns raw non-const (editable) array of internal storage */
+			/* Useful when third-party library like Armadillo or Eigen assumes */
+			/* control of the internal storage. */
 			// Must not modify size of returned array */
 			T* data() {
 				return vec_.data();
@@ -150,6 +152,9 @@ namespace orglab_data {
 			}
 
 			/* Sets number of rows */
+			/* Useful only when third-party library like Armadillo or Eigen assumes */
+			/* control of the internal storage and has changed the shape of */
+			/* storage. */
 			matrix_adapter& rows(const unsigned short& rows) {
 				if (0 == rows) {
 					cols_ = rows_ * cols_;
@@ -167,6 +172,9 @@ namespace orglab_data {
 			}
 
 			/* Sets number of columns */
+			/* Useful only when third-party library like Armadillo or Eigen assumes */
+			/* control of the internal storage and has changed the shape of */
+			/* storage. */
 			matrix_adapter& cols(const unsigned short& cols) {
 				if (0 == cols) {
 					rows_ = rows_ * cols_;
