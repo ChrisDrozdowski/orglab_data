@@ -47,12 +47,6 @@ namespace my_utils {
 		return data;
 	}
 
-	std::chrono::time_point<std::chrono::steady_clock> start;
-	std::chrono::milliseconds elapsed_ms(bool init = false) {
-		if (init) start = std::chrono::steady_clock::now();
-		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
-	}
-
 	std::wstring get_user_documents_folder() {
 		std::wstring wstr;
 		PWSTR buf1 = NULL;
@@ -236,12 +230,16 @@ int main()
 		origin::ColumnPtr col_ptr_1e6 = wks_ptr->Columns->Item[wks_ptr->Cols - 1];
 		std::vector<double> vec_in_1e6 = my_utils::get_test_data<double>(1e6);
 
-		my_utils::elapsed_ms(true);
+		// Quick and dirty perf counter.
+		std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
 		orglab_data::set_column_data<double>(col_ptr_1e6, vec_in_1e6);
-		std::cout << "Write 1E6 rows: " << my_utils::elapsed_ms().count() << " ms" << std::endl;
-		my_utils::elapsed_ms(true);
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+		std::cout << "Write 1E6 rows: " << duration.count() << " ms" << std::endl;
+
+		start = std::chrono::steady_clock::now();
 		std::vector<double> vec_out_1e6 = orglab_data::get_column_data<double>(col_ptr_1e6);
-		std::cout << "Read 1E6 rows: " << my_utils::elapsed_ms().count() << " ms" << std::endl;
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+		std::cout << "Write 1E6 rows: " << duration.count() << " ms" << std::endl;
 
 
 		// Setting and getting matrix data.
